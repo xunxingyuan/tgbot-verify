@@ -1,8 +1,39 @@
 services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-tgbot_verify}
+      MYSQL_USER: ${MYSQL_USER:-tgbot_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?请在 .env 中设置 MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$${MYSQL_PASSWORD}" mysql --protocol=TCP
+          -h 127.0.0.1 -u "$${MYSQL_USER}" -D "$${MYSQL_DATABASE}"
+          -e 'SELECT 1' >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   tgbot:
     build: .
     container_name: sheerid-tgbot
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
 
     # 环境变量
     environment:
@@ -14,10 +45,11 @@ services:
       - CHANNEL_URL=${CHANNEL_URL:-https://t.me/pk_oa}
       - ADMIN_USER_ID=${ADMIN_USER_ID}
       # MySQL配置
-      - MYSQL_HOST=${MYSQL_HOST:-localhost}
-      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      # Compose 内部通过服务名连接，覆盖旧 .env 中的 localhost
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
       - MYSQL_USER=${MYSQL_USER:-tgbot_user}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:?请在 .env 中设置 MYSQL_PASSWORD}
       - MYSQL_DATABASE=${MYSQL_DATABASE:-tgbot_verify}
 
     # 日志持久化
@@ -31,5 +63,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-    # 网络模式
-    network_mode: bridge
+    # 使用 Compose 默认网络，与 mysql 服务互通
+
+volumes:
+  mysql_data:

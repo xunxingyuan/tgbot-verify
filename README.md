@@ -95,14 +95,32 @@ python bot.py
 
 ## 🐳 Docker 部署
 
+Compose 会同时启动 MySQL 8.4 和机器人，自动创建数据库及应用账号，并等待数据库可用后启动机器人。
+
 ```bash
+# 仅首次配置时复制；已有 .env 请直接编辑，保留现有 Bot 配置
 cp env.example .env
 nano .env
-docker-compose up -d
+docker-compose up -d --build
 docker-compose logs -f
 ```
 
-手动构建：
+在 `.env` 中设置以下数据库配置，将两个密码占位符替换为不同的强密码（含 `$` 或 `#` 时保留单引号）：
+
+```env
+MYSQL_USER=tgbot_user
+MYSQL_PASSWORD='replace_with_a_strong_app_password'
+MYSQL_ROOT_PASSWORD='replace_with_a_different_strong_root_password'
+MYSQL_DATABASE=tgbot_verify
+```
+
+`MYSQL_USER` 使用普通账号，不要填 `root`。Compose 中机器人固定连接 `mysql:3306`，不受旧 `.env` 中 `MYSQL_HOST=localhost` 影响；数据库端口不映射到宿主机。
+
+首次启动需要等待数据库初始化，可用 `docker-compose ps` 和 `docker-compose logs --tail=100 mysql` 查看状态。更新代码后执行 `docker-compose up -d --build`。
+
+数据保存在 `mysql_data` 命名卷中，重建容器会保留数据。不要执行 `docker-compose down -v`，该命令会删除数据库数据卷。数据库账号、密码和库名仅在空数据卷首次初始化时创建；已有数据后修改 `.env` 不会自动修改数据库里的账号或密码。
+
+手动构建（需要另外提供可访问的 MySQL，并在 `.env` 中配置其地址；此方式不会启动数据库）：
 
 ```bash
 docker build -t tgbot-verify .
@@ -191,6 +209,7 @@ tgbot-verify/
 | `MYSQL_HOST` | ✅ | MySQL 主机地址 |
 | `MYSQL_USER` | ✅ | MySQL 用户名 |
 | `MYSQL_PASSWORD` | ✅ | MySQL 密码 |
+| `MYSQL_ROOT_PASSWORD` | Docker Compose 必填 | 内置 MySQL 的 root 密码 |
 | `MYSQL_DATABASE` | ✅ | 数据库名称 |
 | `CHANNEL_USERNAME` | ❌ | 频道用户名（默认 pk_oa）|
 | `CHANNEL_URL` | ❌ | 频道链接 |
