@@ -2,6 +2,10 @@ services:
   mysql:
     image: mysql:8.4
     restart: unless-stopped
+    command:
+      - --performance-schema=OFF
+      - --innodb-buffer-pool-size=64M
+      - --max-connections=50
     environment:
       TZ: Asia/Shanghai
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
@@ -31,6 +35,7 @@ services:
     build: .
     container_name: sheerid-tgbot
     restart: unless-stopped
+    shm_size: '512m'
     depends_on:
       mysql:
         condition: service_healthy

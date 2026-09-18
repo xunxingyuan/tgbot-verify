@@ -59,13 +59,25 @@ def generate_teacher_png(first_name: str, last_name: str) -> bytes:
     html = _render_template(first_name, last_name)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1200, "height": 1000})
-        page.set_content(html, wait_until="load")
-        page.wait_for_timeout(500)  # 让样式稳定
-        card = page.locator(".browser-mockup")
-        png_bytes = card.screenshot(type="png")
-        browser.close()
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--disable-extensions',
+            ],
+        )
+        try:
+            page = browser.new_page(viewport={"width": 1200, "height": 1000})
+            page.set_content(html, wait_until="domcontentloaded", timeout=15000)
+            page.wait_for_timeout(500)  # 让样式稳定
+            card = page.locator(".browser-mockup")
+            png_bytes = card.screenshot(type="png")
+        finally:
+            browser.close()
 
     return png_bytes
 

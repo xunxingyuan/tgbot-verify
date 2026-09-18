@@ -3,6 +3,8 @@
 使用提供的MySQL服务器进行数据存储
 """
 import logging
+import time
+import socket
 from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 import pymysql
@@ -31,13 +33,27 @@ class MySQLDatabase:
             'database': os.getenv('MYSQL_DATABASE', 'tgbot_verify'),
             'charset': 'utf8mb4',
             'autocommit': False,
+            'connect_timeout': 10,
         }
         logger.info(f"MySQL 数据库初始化: {self.config['user']}@{self.config['host']}/{self.config['database']}")
         self.init_database()
 
-    def get_connection(self):
-        """获取数据库连接"""
-        return pymysql.connect(**self.config)
+    def get_connection(self, max_retries: int = 3, retry_delay: float = 1.0):
+        """获取数据库连接（带重试机制，应对容器重启或临时DNS解析失败）"""
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                return pymysql.connect(**self.config)
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"数据库连接失败 (尝试 {attempt + 1}/{max_retries}): {e}，将在 {retry_delay} 秒后重试..."
+                    )
+                    time.sleep(retry_delay)
+                else:
+                    logger.error(f"数据库连接最终失败 ({max_retries} 次尝试): {e}")
+                    raise last_error
 
     def init_database(self):
         """初始化数据库表结构"""

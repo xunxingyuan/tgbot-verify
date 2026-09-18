@@ -26,9 +26,9 @@ def _calculate_max_concurrency() -> int:
         cpu_based = cpu_count * 4
         memory_based = int(memory_gb * 2)
         
-        # 取两者的最小值，并设置上下限
+        # 取两者的最小值，并设置上下限（兼顾小内存 VPS）
         max_concurrent = min(cpu_based, memory_based)
-        max_concurrent = max(10, min(max_concurrent, 100))  # 10-100 之间
+        max_concurrent = max(2, min(max_concurrent, 50))
         
         logger.info(
             f"系统资源: CPU={cpu_count}, Memory={memory_gb:.1f}GB, "
@@ -39,19 +39,19 @@ def _calculate_max_concurrency() -> int:
         
     except Exception as e:
         logger.warning(f"无法获取系统资源信息: {e}, 使用默认值")
-        return 20  # 默认值
+        return 4  # 默认值
 
 # 计算每种验证类型的并发限制
 _base_concurrency = _calculate_max_concurrency()
 
 # 为不同类型的验证创建独立的信号量
-# 这样可以避免一个类型的验证阻塞其他类型
+# 这样可以避免一个类型的验证阻塞其他类型，确保至少为 1
 _verification_semaphores: Dict[str, asyncio.Semaphore] = {
-    "gemini_one_pro": asyncio.Semaphore(_base_concurrency // 5),
-    "chatgpt_teacher_k12": asyncio.Semaphore(_base_concurrency // 5),
-    "spotify_student": asyncio.Semaphore(_base_concurrency // 5),
-    "youtube_student": asyncio.Semaphore(_base_concurrency // 5),
-    "bolt_teacher": asyncio.Semaphore(_base_concurrency // 5),
+    "gemini_one_pro": asyncio.Semaphore(max(1, _base_concurrency // 5)),
+    "chatgpt_teacher_k12": asyncio.Semaphore(max(1, _base_concurrency // 5)),
+    "spotify_student": asyncio.Semaphore(max(1, _base_concurrency // 5)),
+    "youtube_student": asyncio.Semaphore(max(1, _base_concurrency // 5)),
+    "bolt_teacher": asyncio.Semaphore(max(1, _base_concurrency // 5)),
 }
 
 
