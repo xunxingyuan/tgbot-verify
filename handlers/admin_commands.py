@@ -18,14 +18,18 @@ async def addbalance_command(update: Update, context: ContextTypes.DEFAULT_TYPE,
     if await reject_group_command(update):
         return
 
+    message = update.effective_message
+    if not message:
+        return
+
     user_id = update.effective_user.id
 
     if user_id != ADMIN_USER_ID:
-        await update.message.reply_text("您没有权限使用此命令。")
+        await message.reply_text("您没有权限使用此命令。")
         return
 
     if not context.args or len(context.args) < 2:
-        await update.message.reply_text(
+        await message.reply_text(
             "使用方法: /addbalance <用户ID> <积分数量>\n\n示例: /addbalance 123456789 10"
         )
         return
@@ -35,19 +39,19 @@ async def addbalance_command(update: Update, context: ContextTypes.DEFAULT_TYPE,
         amount = int(context.args[1])
 
         if not db.user_exists(target_user_id):
-            await update.message.reply_text("用户不存在。")
+            await message.reply_text("用户不存在。")
             return
 
         if db.add_balance(target_user_id, amount):
             user = db.get_user(target_user_id)
-            await update.message.reply_text(
+            await message.reply_text(
                 f"✅ 成功为用户 {target_user_id} 增加 {amount} 积分。\n"
                 f"当前积分：{user['balance']}"
             )
         else:
-            await update.message.reply_text("操作失败，请稍后重试。")
+            await message.reply_text("操作失败，请稍后重试。")
     except ValueError:
-        await update.message.reply_text("参数格式错误，请输入有效的数字。")
+        await message.reply_text("参数格式错误，请输入有效的数字。")
 
 
 async def block_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
@@ -55,14 +59,18 @@ async def block_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     if await reject_group_command(update):
         return
 
+    message = update.effective_message
+    if not message:
+        return
+
     user_id = update.effective_user.id
 
     if user_id != ADMIN_USER_ID:
-        await update.message.reply_text("您没有权限使用此命令。")
+        await message.reply_text("您没有权限使用此命令。")
         return
 
     if not context.args:
-        await update.message.reply_text(
+        await message.reply_text(
             "使用方法: /block <用户ID>\n\n示例: /block 123456789"
         )
         return
@@ -71,15 +79,15 @@ async def block_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
         target_user_id = int(context.args[0])
 
         if not db.user_exists(target_user_id):
-            await update.message.reply_text("用户不存在。")
+            await message.reply_text("用户不存在。")
             return
 
         if db.block_user(target_user_id):
-            await update.message.reply_text(f"✅ 已拉黑用户 {target_user_id}。")
+            await message.reply_text(f"✅ 已拉黑用户 {target_user_id}。")
         else:
-            await update.message.reply_text("操作失败，请稍后重试。")
+            await message.reply_text("操作失败，请稍后重试。")
     except ValueError:
-        await update.message.reply_text("参数格式错误，请输入有效的用户ID。")
+        await message.reply_text("参数格式错误，请输入有效的用户ID。")
 
 
 async def white_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
@@ -87,14 +95,18 @@ async def white_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     if await reject_group_command(update):
         return
 
+    message = update.effective_message
+    if not message:
+        return
+
     user_id = update.effective_user.id
 
     if user_id != ADMIN_USER_ID:
-        await update.message.reply_text("您没有权限使用此命令。")
+        await message.reply_text("您没有权限使用此命令。")
         return
 
     if not context.args:
-        await update.message.reply_text(
+        await message.reply_text(
             "使用方法: /white <用户ID>\n\n示例: /white 123456789"
         )
         return
@@ -103,15 +115,15 @@ async def white_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
         target_user_id = int(context.args[0])
 
         if not db.user_exists(target_user_id):
-            await update.message.reply_text("用户不存在。")
+            await message.reply_text("用户不存在。")
             return
 
         if db.unblock_user(target_user_id):
-            await update.message.reply_text(f"✅ 已将用户 {target_user_id} 移出黑名单。")
+            await message.reply_text(f"✅ 已将用户 {target_user_id} 移出黑名单。")
         else:
-            await update.message.reply_text("操作失败，请稍后重试。")
+            await message.reply_text("操作失败，请稍后重试。")
     except ValueError:
-        await update.message.reply_text("参数格式错误，请输入有效的用户ID。")
+        await message.reply_text("参数格式错误，请输入有效的用户ID。")
 
 
 async def blacklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
@@ -119,16 +131,20 @@ async def blacklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     if await reject_group_command(update):
         return
 
+    message = update.effective_message
+    if not message:
+        return
+
     user_id = update.effective_user.id
 
     if user_id != ADMIN_USER_ID:
-        await update.message.reply_text("您没有权限使用此命令。")
+        await message.reply_text("您没有权限使用此命令。")
         return
 
     blacklist = db.get_blacklist()
 
     if not blacklist:
-        await update.message.reply_text("黑名单为空。")
+        await message.reply_text("黑名单为空。")
         return
 
     msg = "📋 黑名单列表：\n\n"
@@ -138,7 +154,7 @@ async def blacklist_command(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         msg += f"姓名: {user['full_name']}\n"
         msg += "---\n"
 
-    await update.message.reply_text(msg)
+    await message.reply_text(msg)
 
 
 async def genkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
@@ -146,14 +162,18 @@ async def genkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db:
     if await reject_group_command(update):
         return
 
+    message = update.effective_message
+    if not message:
+        return
+
     user_id = update.effective_user.id
 
     if user_id != ADMIN_USER_ID:
-        await update.message.reply_text("您没有权限使用此命令。")
+        await message.reply_text("您没有权限使用此命令。")
         return
 
     if not context.args or len(context.args) < 2:
-        await update.message.reply_text(
+        await message.reply_text(
             "使用方法: /genkey <卡密> <积分> [使用次数] [过期天数]\n\n"
             "示例:\n"
             "/genkey wandouyu 20 - 生成20积分的卡密（单次使用，永不过期）\n"
@@ -169,11 +189,11 @@ async def genkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db:
         expire_days = int(context.args[3]) if len(context.args) > 3 else None
 
         if balance <= 0:
-            await update.message.reply_text("积分数量必须大于0。")
+            await message.reply_text("积分数量必须大于0。")
             return
 
         if max_uses <= 0:
-            await update.message.reply_text("使用次数必须大于0。")
+            await message.reply_text("使用次数必须大于0。")
             return
 
         if db.create_card_key(key_code, balance, user_id, max_uses, expire_days):
@@ -188,11 +208,11 @@ async def genkey_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db:
             else:
                 msg += "有效期：永久\n"
             msg += f"\n用户使用方法: /use {key_code}"
-            await update.message.reply_text(msg)
+            await message.reply_text(msg)
         else:
-            await update.message.reply_text("卡密已存在或生成失败，请更换卡密名称。")
+            await message.reply_text("卡密已存在或生成失败，请更换卡密名称。")
     except ValueError:
-        await update.message.reply_text("参数格式错误，请输入有效的数字。")
+        await message.reply_text("参数格式错误，请输入有效的数字。")
 
 
 async def listkeys_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
@@ -200,16 +220,20 @@ async def listkeys_command(update: Update, context: ContextTypes.DEFAULT_TYPE, d
     if await reject_group_command(update):
         return
 
+    message = update.effective_message
+    if not message:
+        return
+
     user_id = update.effective_user.id
 
     if user_id != ADMIN_USER_ID:
-        await update.message.reply_text("您没有权限使用此命令。")
+        await message.reply_text("您没有权限使用此命令。")
         return
 
     keys = db.get_all_card_keys()
 
     if not keys:
-        await update.message.reply_text("暂无卡密。")
+        await message.reply_text("暂无卡密。")
         return
 
     msg = "📋 卡密列表：\n\n"
@@ -233,7 +257,7 @@ async def listkeys_command(update: Update, context: ContextTypes.DEFAULT_TYPE, d
     if len(keys) > 20:
         msg += f"\n（仅显示前20个，共{len(keys)}个）"
 
-    await update.message.reply_text(msg)
+    await message.reply_text(msg)
 
 
 async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
@@ -241,23 +265,27 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     if await reject_group_command(update):
         return
 
+    message = update.effective_message
+    if not message:
+        return
+
     user_id = update.effective_user.id
     if user_id != ADMIN_USER_ID:
-        await update.message.reply_text("您没有权限使用此命令。")
+        await message.reply_text("您没有权限使用此命令。")
         return
 
     text = " ".join(context.args).strip() if context.args else ""
-    if not text and update.message.reply_to_message:
-        text = update.message.reply_to_message.text or ""
+    if not text and message.reply_to_message:
+        text = message.reply_to_message.text or ""
 
     if not text:
-        await update.message.reply_text("使用方法: /broadcast <文本>，或回复一条消息后发送 /broadcast")
+        await message.reply_text("使用方法: /broadcast <文本>，或回复一条消息后发送 /broadcast")
         return
 
     user_ids = db.get_all_user_ids()
     success, failed = 0, 0
 
-    status_msg = await update.message.reply_text(f"📢 开始广播，共 {len(user_ids)} 个用户...")
+    status_msg = await message.reply_text(f"📢 开始广播，共 {len(user_ids)} 个用户...")
 
     for uid in user_ids:
         try:
